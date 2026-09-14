@@ -187,6 +187,21 @@
 
 ## 3. 리뷰 (Review)
 
+### 3.0 리뷰 사진 업로드
+`POST /api/v1/uploads/images`
+
+`03_행사상세`/`03b_행사상세_리뷰없음`의 리뷰 작성 폼에 있는 카메라 아이콘(사진 첨부)에서 사용. 이 엔드포인트는 화면에 이미 노출된 기능이므로 MVP 범위에 포함한다 — 3.2절 리뷰 작성 시 반환된 `imageUrl`을 그대로 전달한다.
+
+**인증 필요**: 예
+
+**Request Body**: `multipart/form-data`, 필드명 `file` (이미지 1개)
+
+**Response 예시**
+```json
+{ "imageUrl": "https://.../uploads/reviews/3f9c.jpg" }
+```
+> 저장소는 로컬 디스크 또는 S3 호환 오브젝트 스토리지 중 배포 환경에 맞게 선택 (`cheonan_on_architecture_spec.md` 2절 참고). 파일 크기/확장자 제한은 구현 시 정의.
+
 ### 3.1 행사 리뷰 목록 조회
 `GET /api/v1/events/{eventId}/reviews`
 
@@ -232,7 +247,7 @@
 |---|---|---|---|
 | rating | integer | Y | 별점 (1~5) |
 | content | string | Y | 리뷰 내용 |
-| imageUrl | string | N | 첨부 사진 URL (업로드 API로 먼저 업로드 후 URL 전달) |
+| imageUrl | string | N | 첨부 사진 URL (3.0절 업로드 API로 먼저 업로드 후 URL 전달) |
 
 **Response 예시**
 ```json
@@ -373,4 +388,4 @@
 - 리뷰 좋아요/신고 API
 - 커뮤니티 게시글/댓글 API
 - 북마크 행사 D-day 알림 발송 API 및 알림 설정 API
-- 리뷰 사진 업로드용 별도 파일 업로드 엔드포인트 (`POST /uploads`)
+- 페이지네이션 이후 단계(무한 스크롤 커서 방식 등)로의 전환

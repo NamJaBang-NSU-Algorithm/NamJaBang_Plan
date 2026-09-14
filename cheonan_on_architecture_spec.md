@@ -42,7 +42,7 @@ flowchart LR
 backend/
 ├── app/
 │   ├── __init__.py          # Flask app factory, 확장 초기화, 블루프린트 등록
-│   ├── config.py            # 환경별 설정 (dev/prod, DB URI, JWT secret, 카카오 client 정보, 지도 API 키)
+│   ├── config.py            # 환경별 설정 (dev/prod, DB URI, JWT secret, 카카오 client 정보, 지도 API 키, 업로드 저장소 설정)
 │   ├── extensions.py        # SQLAlchemy, Flask-JWT-Extended, CORS, Migrate 등 인스턴스
 │   ├── models/               # SQLAlchemy 모델 (cheonan_on_erd_spec.md 테이블 매핑)
 │   │   ├── user.py
@@ -52,12 +52,13 @@ backend/
 │   ├── api/                  # 블루프린트 (cheonan_on_api_spec.md 도메인 매핑)
 │   │   ├── auth/               # 1. 카카오 로그인/로그아웃/토큰재발급
 │   │   ├── events/             # 2. 행사 목록/상세/길찾기
-│   │   ├── reviews/            # 3. 행사 리뷰, 내 리뷰
+│   │   ├── reviews/            # 3. 행사 리뷰, 내 리뷰, 리뷰 사진 업로드
 │   │   ├── bookmarks/          # 4. 북마크
 │   │   └── users/              # 5. 마이페이지(내 정보)
 │   ├── services/              # 도메인 로직
 │   │   ├── kakao.py               # 카카오 토큰 교환, 사용자 정보 조회
-│   │   └── directions.py          # 외부 길찾기 API 호출·응답 매핑 (06_길찾기)
+│   │   ├── directions.py          # 외부 길찾기 API 호출·응답 매핑 (06_길찾기)
+│   │   └── storage.py             # 리뷰 사진 업로드 저장(로컬 디스크 또는 S3 호환 스토리지)
 │   ├── schemas/               # 요청/응답 직렬화·검증 (marshmallow 또는 pydantic)
 │   └── errors.py              # 공통 에러 핸들러 (cheonan_on_api_spec.md 6절 에러 포맷)
 ├── migrations/               # Flask-Migrate/Alembic 마이그레이션
@@ -72,7 +73,7 @@ backend/
 |---|---|
 | `api/auth` | `POST /auth/kakao/login`, `POST /auth/logout`, `POST /auth/token/refresh` |
 | `api/events` | `GET /events`, `GET /events/{id}`, `GET /events/{id}/directions` |
-| `api/reviews` | `GET/POST /events/{id}/reviews`, `GET /users/me/reviews`, `DELETE /reviews/{id}` |
+| `api/reviews` | `GET/POST /events/{id}/reviews`, `GET /users/me/reviews`, `DELETE /reviews/{id}`, `POST /uploads/images` |
 | `api/bookmarks` | `GET/POST /bookmarks`, `DELETE /bookmarks/{eventId}` |
 | `api/users` | `GET /users/me` |
 
@@ -125,6 +126,7 @@ frontend/
 │   │   ├── Button/                  # Style × Size 변형
 │   │   ├── FilterChip/
 │   │   ├── BookmarkButton/
+│   │   ├── Pagination/              # Figma 미반영, cheonan_on_feature_spec.md 02_행사목록 디자인 갭 참고
 │   │   └── icons/
 │   ├── api/                    # axios 인스턴스 + 도메인별 클라이언트 (cheonan_on_api_spec.md 대응)
 │   │   ├── client.ts               # baseURL `/api/v1`, 인터셉터(토큰 첨부, 401 재발급)
@@ -164,6 +166,7 @@ frontend/
 
 - Access/Refresh JWT는 `store`(전역 상태) + 안전한 저장소(httpOnly 쿠키 또는 메모리+refresh 전략)에 보관
 - 비로그인 상태에서 북마크·리뷰 작성·마이페이지 접근 시 `04_로그인`으로 리다이렉트하는 라우팅 가드 적용, 로그인 성공 후 원래 시도했던 화면으로 복귀
+- 로그아웃 버튼은 현재 Figma에 없음(`cheonan_on_feature_spec.md` 05_마이페이지 디자인 갭 참고) — `pages/MyPage`의 프로필 영역에 로그아웃 버튼을 추가하고 `POST /auth/logout` 호출 후 `01_홈`으로 이동하도록 구현
 - `EventList`의 리스트/캘린더/지도 뷰, `EventDetail`의 리뷰 있음/없음 상태는 별도 라우트가 아니라 **같은 페이지 내부의 컴포넌트/상태 전환**으로 구현 (뷰 토글 값, `reviewCount === 0` 여부로 분기)
 
 ### 3.3 범위 제한
